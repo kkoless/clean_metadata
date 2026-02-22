@@ -32,10 +32,6 @@
 
 ### 1. Клонируйте или перейдите в папку проекта
 
-```bash
-cd "/Users/kkolesss/Documents/VSCode Projects/clean-metadata"
-```
-
 ### 2. Создайте и активируйте виртуальное окружение
 
 ```bash
