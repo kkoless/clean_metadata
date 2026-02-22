@@ -1,0 +1,96 @@
+════════════════════════════════════════════════════════════════
+  CLEAN METADATA - ШПАРГАЛКА ПО КОМАНДАМ
+════════════════════════════════════════════════════════════════
+
+📍 ПЕРЕХОД В ПРОЕКТ
+─────────────────────────────────────────────────────────────
+cd "/Users/kkolesss/Documents/VSCode Projects/clean-metadata"
+
+
+🔧 АКТИВАЦИЯ ВИРТУАЛЬНОГО ОКРУЖЕНИЯ
+─────────────────────────────────────────────────────────────
+source venv/bin/activate
+
+
+✅ ПРОВЕРКА УСТАНОВКИ
+─────────────────────────────────────────────────────────────
+python clean_metadata.py --check-deps
+
+
+📸 БАЗОВЫЕ КОМАНДЫ
+─────────────────────────────────────────────────────────────
+# Один файл
+python clean_metadata.py photo.jpg
+
+# С подробным выводом
+python clean_metadata.py photo.jpg -v
+
+# Только метаданные
+python clean_metadata.py photo.jpg --no-watermark-attack
+
+
+🎯 WATERMARK АТАКИ
+─────────────────────────────────────────────────────────────
+# Ensemble (рекомендуется) - все методы вместе
+python clean_metadata.py photo.jpg --wm-method ensemble --wm-strength 0.5
+
+# Гауссовский шум
+python clean_metadata.py photo.jpg --wm-method gaussian --wm-strength 0.4
+
+# DCT возмущения
+python clean_metadata.py photo.jpg --wm-method dct --wm-strength 0.5
+
+# Вейвлет-домен
+python clean_metadata.py photo.jpg --wm-method wavelet --wm-strength 0.6
+
+
+📁 ОБРАБОТКА ПАПОК
+─────────────────────────────────────────────────────────────
+# Вся папка
+python clean_metadata.py ./examples -o ./cleaned
+
+# С максимальной атакой
+python clean_metadata.py ./examples --wm-method ensemble --wm-strength 0.7 -r
+
+
+🔍 АНАЛИЗ
+─────────────────────────────────────────────────────────────
+# С анализом watermark
+python clean_metadata.py photo.jpg --analyze -v
+
+# Сравнение метаданных
+python clean_metadata.py photo.jpg --compare
+
+
+🎬 ВИДЕО И АУДИО
+─────────────────────────────────────────────────────────────
+# Видео (требует ffmpeg)
+python clean_metadata.py video.mp4
+
+# Видео с перекодированием
+python clean_metadata.py video.mp4 -a
+
+# Аудио
+python clean_metadata.py track.mp3
+
+
+💾 СОХРАНЕНИЕ В ДРУГУЮ ПАПКУ
+─────────────────────────────────────────────────────────────
+python clean_metadata.py photo.jpg -o /path/to/output
+
+
+🔄 РАНДОМИЗАЦИЯ TIMESTAMPS
+─────────────────────────────────────────────────────────────
+python clean_metadata.py photo.jpg -r
+
+
+🛑 ВЫХОД ИЗ VENV
+─────────────────────────────────────────────────────────────
+deactivate
+
+
+📚 ПОЛНАЯ СПРАВКА
+─────────────────────────────────────────────────────────────
+python clean_metadata.py --help
+
+════════════════════════════════════════════════════════════════

@@ -1,0 +1,5 @@
+mutagen==1.47.0
+numpy==2.0.2
+pillow==11.3.0
+PyWavelets==1.6.0
+scipy==1.13.1
