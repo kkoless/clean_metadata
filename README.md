@@ -1,190 +1,214 @@
-# Clean Metadata - Удаление метаданных и атаки на невидимые водяные знаки
+# Clean Metadata
 
-Инструмент для удаления метаданных и атак на невидимые водяные знаки (SynthID, C2PA, HiDDeN и др.) из изображений, видео и аудио файлов.
+**RU:** Инструмент для удаления метаданных и атак на невидимые водяные знаки (SynthID, C2PA, HiDDeN и др.) из изображений, видео и аудио файлов.
 
-**Для научно-исследовательских целей** (медиафорензика, watermark robustness testing).
+**EN:** A tool for removing metadata and attacking invisible watermarks (SynthID, C2PA, HiDDeN, etc.) from images, video and audio files.
+
+**Для научно-исследовательских целей / For research purposes** (media forensics, watermark robustness testing).
 
 ---
 
-## 🎯 Возможности
+## RU — Возможности / EN — Features
 
-### Удаление метаданных
-- **EXIF, XMP, IPTC** данные из изображений
-- **Metadata chunks** из PNG файлов
-- **APP-сегменты** из JPEG файлов
-- **Metadata streams** из видео
-- **ID3 теги** из аудио файлов
+### RU — Удаление метаданных / EN — Metadata Removal
+- **EXIF, XMP, IPTC** data from images / данные из изображений
+- **Metadata chunks** from PNG files / чанки из PNG файлов
+- **APP segments** from JPEG files / APP-сегменты из JPEG файлов
+- **Metadata streams** from video / потоки из видео
+- **ID3 tags** from audio files / теги из аудио файлов
 
-### Атаки на невидимые водяные знаки
-- **Gaussian noise injection** (классика Stirmark)
-- **JPEG double compression** (атака на частотный домен)
-- **DCT-coefficient perturbation** (прямая атака на частоты)
-- **Wavelet-domain noise** (атака через DWT)
-- **Brightness/contrast jitter** (фотометрические трансформации)
-- **Geometric micro-distortion** (субпиксельные деформации)
-- **Median filter** (сглаживание watermark-паттернов)
+### RU — Атаки на невидимые водяные знаки / EN — Invisible Watermark Attacks
+- **Gaussian noise injection** (Stirmark classic)
+- **JPEG double compression** (frequency-domain attack)
+- **DCT-coefficient perturbation** (direct frequency attack)
+- **Wavelet-domain noise** (DWT attack)
+- **Brightness/contrast jitter** (photometric transforms)
+- **Geometric micro-distortion** (sub-pixel warping)
+- **Median filter** (watermark pattern smoothing)
 - **FGSM-style adversarial noise** (Goodfellow et al., 2014)
-- **Combined ensemble attack** (все методы вместе) ⭐ **Рекомендуется**
+- **Combined ensemble attack** (all methods combined) ⭐ **Recommended**
 
 ---
 
-## 📦 Установка
+## RU — Установка / EN — Installation
 
-### 1. Клонируйте или перейдите в папку проекта
+### 1. RU — Клонируйте или перейдите в папку проекта / EN — Clone or navigate to the project folder
 
-### 2. Создайте и активируйте виртуальное окружение
+### 2. RU — Создайте и активируйте виртуальное окружение / EN — Create and activate virtual environment
 
 ```bash
-# Создание виртуального окружения
+# RU: Создание / EN: Create
 python3 -m venv venv
 
-# Активация (macOS/Linux)
+# RU: Активация macOS/Linux / EN: Activate macOS/Linux
 source venv/bin/activate
 
-# Активация (Windows)
+# EN: Activate Windows
 # venv\Scripts\activate
 ```
 
-### 3. Установите Python-зависимости
+### 3. RU — Установите Python-зависимости / EN — Install Python dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Это установит:
-- **Pillow** - обработка изображений
-- **numpy** - численные операции
-- **scipy** - DCT и геометрические атаки
-- **PyWavelets** - атаки в вейвлет-домене
-- **mutagen** - удаление метаданных из аудио
+Это установит / This installs:
+- **Pillow** — image processing / обработка изображений
+- **numpy** — numerical operations / численные операции
+- **scipy** — DCT and geometric attacks / DCT и геометрические атаки
+- **PyWavelets** — wavelet-domain attacks / атаки в вейвлет-домене
+- **mutagen** — audio metadata removal / удаление метаданных аудио
 
-### 4. Установите внешние инструменты (опционально, но рекомендуется)
+### 4. RU — Внешние инструменты / EN — External tools (optional but recommended)
 
-#### ExifTool (для полного удаления метаданных)
+#### ExifTool (RU: полное удаление метаданных / EN: full metadata removal)
 - **macOS**: `brew install exiftool`
 - **Linux**: `sudo apt-get install libimage-exiftool-perl`
 - **Windows**: [https://exiftool.org](https://exiftool.org)
 
-#### FFmpeg (для обработки видео)
+#### FFmpeg (RU: обработка видео / EN: video processing)
 - **macOS**: `brew install ffmpeg`
 - **Linux**: `sudo apt-get install ffmpeg`
 - **Windows**: [https://ffmpeg.org](https://ffmpeg.org)
 
 ---
 
-## 🚀 Использование
+## RU — Использование / EN — Usage
 
-### Базовое использование
+### RU — Базовое использование / EN — Basic usage
 
 ```bash
-# Обработать одно изображение (ensemble attack, recommended)
+# RU: Обработать одно изображение (ensemble attack, рекомендуется)
+# EN: Process a single image (ensemble attack, recommended)
 python clean_metadata.py photo.jpg
 
-# Только удаление метаданных, без атаки на watermark
+# RU: Только удаление метаданных, без атаки на watermark
+# EN: Metadata removal only, no watermark attack
 python clean_metadata.py photo.jpg --no-watermark-attack
 ```
 
-### Продвинутое использование
+### RU — Продвинутое использование / EN — Advanced usage
 
 ```bash
-# Рекомендуемый режим для исследования
+# RU: Рекомендуемый режим для исследования
+# EN: Recommended mode for research
 python clean_metadata.py photo.jpg --wm-method ensemble --wm-strength 0.5 -v
 
-# Вся папка с максимальной атакой
+# RU: Вся папка с максимальной атакой
+# EN: Entire folder with maximum attack
 python clean_metadata.py ./examples -o ./cleaned --wm-method ensemble --wm-strength 0.7 -a -r
 
-# Обработка с анализом watermark до и после
+# RU: Обработка с анализом watermark до и после
+# EN: Process with watermark analysis before and after
 python clean_metadata.py photo.jpg --analyze --wm-method ensemble -v
 
-# Сравнение метаданных до/после
+# RU: Сравнение метаданных до/после
+# EN: Compare metadata before/after
 python clean_metadata.py photo.jpg --compare
 
-# Обработка видео с перекодированием
+# RU: Управление качеством выходного JPEG
+# EN: Control output JPEG quality
+python clean_metadata.py photo.jpg --quality 92
+
+# RU: Обработка видео с перекодированием
+# EN: Process video with re-encoding
 python clean_metadata.py video.mp4 -a
 
-# Обработка аудио
+# RU: Обработка аудио
+# EN: Process audio
 python clean_metadata.py track.mp3
 ```
 
 ---
 
-## 🔧 Опции командной строки
+## RU — Опции командной строки / EN — Command-line Options
 
-### Основные параметры
+### RU — Основные параметры / EN — Main Parameters
 
-| Опция | Описание |
-|-------|----------|
-| `inputs` | Файл или папка для обработки |
-| `-o, --output` | Папка для сохранения результатов (по умолчанию: `./cleaned`) |
-| `-v, --verbose` | Подробный вывод процесса |
-| `-a, --aggressive` | Агрессивный режим (перекодирование видео, пересоздание пикселей) |
-| `-r, --randomize-timestamps` | Рандомизировать timestamps файлов |
-| `-c, --compare` | Сравнить метаданные до/после (требует exiftool) |
-| `--analyze` | Анализировать файлы на признаки watermark (до и после) |
-| `--check-deps` | Проверить установленные зависимости |
+| Option / Опция | RU — Описание | EN — Description |
+|----------------|---------------|------------------|
+| `inputs` | Файл или папка для обработки | File or folder to process |
+| `-o, --output` | Папка для результатов (по умолчанию: `./cleaned`) | Output folder (default: `./cleaned`) |
+| `-v, --verbose` | Подробный вывод процесса | Verbose output |
+| `-a, --aggressive` | Агрессивный режим (перекодирование видео) | Aggressive mode (re-encode video, recreate pixels) |
+| `-r, --randomize-timestamps` | Рандомизировать timestamps файлов | Randomize file timestamps |
+| `-c, --compare` | Сравнить метаданные до/после | Compare metadata before/after (requires exiftool) |
+| `--analyze` | Анализировать файлы на watermark | Analyze files for watermark signatures |
+| `--quality` | Качество JPEG на выходе (60–97, default=90) | Output JPEG quality (60–97, default=90) |
+| `--check-deps` | Проверить установленные зависимости | Check installed dependencies |
 
-### Параметры watermark-атаки
+### RU — Параметры watermark-атаки / EN — Watermark Attack Parameters
 
-| Опция | Описание |
-|-------|----------|
-| `--wm-method` | Метод атаки: `ensemble`, `gaussian`, `dct`, `wavelet`, `photometric`, `geometric`, `fgsm`, `median`, `jpeg` |
-| `--wm-strength` | Сила атаки от 0.0 до 1.0 (рекомендуется 0.3-0.6) |
-| `--no-watermark-attack` | Только метаданные, без атаки на watermark |
+| Option / Опция | RU — Описание | EN — Description |
+|----------------|---------------|------------------|
+| `--wm-method` | Метод атаки | Attack method |
+| `--wm-strength` | Сила атаки 0.0–1.0 (рекомендуется 0.3–0.6) | Attack strength 0.0–1.0 (recommended 0.3–0.6) |
+| `--no-watermark-attack` | Только метаданные, без атаки | Metadata only, no watermark attack |
 
-### Методы watermark-атаки
+### RU — Методы watermark-атаки / EN — Watermark Attack Methods
 
-- **`ensemble`** ⭐ - Все методы вместе (наиболее эффективно)
-- **`gaussian`** - Гауссовский шум (Stirmark)
-- **`dct`** - Возмущение DCT-коэффициентов (требует scipy)
-- **`wavelet`** - Шум в вейвлет-домене (требует PyWavelets)
-- **`photometric`** - Изменения яркости/контраста/гаммы
-- **`geometric`** - Микро-деформации пикселей (требует scipy)
-- **`fgsm`** - Adversarial noise (FGSM-style)
-- **`median`** - Медианный фильтр
-- **`jpeg`** - Двойное JPEG-сжатие
+| Method | RU | EN |
+|--------|----|----|
+| **`ensemble`** ⭐ | Все методы вместе (наиболее эффективно) | All methods combined (most effective) |
+| **`gaussian`** | Гауссовский шум (Stirmark) | Gaussian noise (Stirmark) |
+| **`dct`** | Возмущение DCT-коэффициентов | DCT-coefficient perturbation |
+| **`wavelet`** | Шум в вейвлет-домене | Wavelet-domain noise |
+| **`photometric`** | Изменения яркости/контраста/гаммы | Brightness/contrast/gamma changes |
+| **`geometric`** | Микро-деформации пикселей | Pixel micro-distortion |
+| **`fgsm`** | Adversarial noise (FGSM-style) | Adversarial noise (FGSM-style) |
+| **`median`** | Медианный фильтр | Median filter |
+| **`jpeg`** | Двойное JPEG-сжатие | Double JPEG compression |
 
 ---
 
-## 📊 Примеры использования
+## RU — Примеры использования / EN — Usage Examples
 
-### Пример 1: Быстрая обработка одного файла
+### Example 1: RU — Быстрая обработка / EN — Quick processing
 
 ```bash
 python clean_metadata.py examples/photo.jpg
 ```
 
-**Результат:**
-- Удалены все метаданные
-- Применена ensemble-атака на watermark
-- Файл сохранён в `./cleaned/photo_clean.jpg`
+**RU — Результат:** Удалены метаданные, применена ensemble-атака, файл в `./cleaned/photo_clean.jpg`
 
-### Пример 2: Обработка папки с анализом
+**EN — Result:** Metadata removed, ensemble attack applied, file saved to `./cleaned/photo_clean.jpg`
+
+### Example 2: RU — Обработка папки с анализом / EN — Folder processing with analysis
 
 ```bash
 python clean_metadata.py ./examples --wm-method ensemble --wm-strength 0.5 --analyze -v
 ```
 
-**Результат:**
-- Обработаны все поддерживаемые файлы в папке
-- Проведён анализ на наличие watermark до и после
-- Подробный вывод процесса
+**RU:** Все файлы в папке обработаны, проведён анализ watermark до и после, подробный вывод.
 
-### Пример 3: Только метаданные (без watermark-атаки)
+**EN:** All supported files in the folder processed, watermark analysis before and after, verbose output.
+
+### Example 3: RU — Только метаданные / EN — Metadata only
 
 ```bash
 python clean_metadata.py photo.jpg --no-watermark-attack --compare
 ```
 
-**Результат:**
-- Удалены только метаданные
-- Пиксели изображения не изменены
-- Показано сравнение метаданных до/после
+**RU:** Удалены только метаданные, пиксели не изменены, показано сравнение до/после.
+
+**EN:** Metadata removed only, pixels unchanged, before/after comparison shown.
+
+### Example 4: RU — Управление качеством JPEG / EN — JPEG quality control
+
+```bash
+# RU: Высокое качество (почти без потерь)
+# EN: High quality (near-lossless)
+python clean_metadata.py photo.jpg --quality 95
+
+# RU: Компактный файл
+# EN: Compact file size
+python clean_metadata.py photo.jpg --quality 75
+```
 
 ---
 
-## 📚 Академические ссылки
-
-Методы основаны на исследованиях:
+## RU — Академические ссылки / EN — Academic References
 
 - Fernandez et al. "The Stable Signature" (2023)
 - Zhao et al. "Invisible Image Watermarks Are Provably Removable" (2023)
@@ -197,83 +221,77 @@ python clean_metadata.py photo.jpg --no-watermark-attack --compare
 
 ---
 
-## 🔍 Проверка зависимостей
-
-Проверить установленные зависимости:
+## RU — Проверка зависимостей / EN — Check Dependencies
 
 ```bash
 python clean_metadata.py --check-deps
 ```
 
-Вывод покажет:
-- ✓ Установленные компоненты
-- ✗ Отсутствующие компоненты с инструкциями по установке
-
 ---
 
-## 📁 Структура проекта
+## RU — Структура проекта / EN — Project Structure
 
 ```
 clean-metadata/
-├── venv/                    # Виртуальное окружение Python
-├── clean_metadata.py        # Основной скрипт
-├── requirements.txt         # Python-зависимости
-├── README.md               # Документация (этот файл)
-├── .gitignore              # Git ignore правила
-├── examples/               # Папка для тестовых файлов
-└── cleaned/                # Папка с обработанными файлами (по умолчанию)
+├── venv/                    # Python virtual environment
+├── clean_metadata.py        # Main script
+├── requirements.txt         # Python dependencies
+├── requirements-lock.txt    # Pinned versions
+├── README.md                # This file (RU + EN)
+├── QUICKSTART.md            # Quick start guide (RU + EN)
+├── PROJECT_INFO.md          # Project info (RU + EN)
+├── COMMANDS.txt             # Command cheatsheet (RU + EN)
+├── .gitignore
+├── examples/                # Input files folder
+└── cleaned/                 # Output files folder (auto-created)
 ```
 
 ---
 
-## ⚠️ Важные примечания
+## RU — Важные примечания / EN — Important Notes
 
-1. **Качество изображения**: При `wm-strength > 0.7` возможна заметная деградация качества
-2. **PSNR метрика**: Скрипт показывает PSNR после обработки:
-   - PSNR > 42 dB = отличное качество (незаметно)
-   - PSNR > 36 dB = хорошее качество
-   - PSNR > 30 dB = приемлемое качество
-   - PSNR < 30 dB = заметная деградация
+1. **RU:** Качество изображения: при `wm-strength > 0.7` возможна заметная деградация
+   **EN:** Image quality: at `wm-strength > 0.7` visible degradation is possible
 
-3. **Поддерживаемые форматы**:
-   - **Изображения**: JPG, PNG, GIF, TIFF, BMP, WebP, AVIF, HEIC
-   - **Видео**: MP4, MOV, AVI, MKV, WebM, FLV, WMV
-   - **Аудио**: MP3, FLAC, OGG, M4A, WAV, AIFF, WMA
+2. **PSNR:**
+   - `> 42 dB` — отличное / excellent (invisible)
+   - `> 36 dB` — хорошее / good
+   - `> 30 dB` — приемлемое / acceptable
+   - `< 30 dB` — заметная деградация / visible degradation
 
-4. **Ethical Use**: Инструмент предназначен для научных исследований и тестирования робастности систем watermarking
+3. **RU — Поддерживаемые форматы / EN — Supported formats:**
+   - **Images / Изображения:** JPG, PNG, GIF, TIFF, BMP, WebP, AVIF, HEIC
+   - **Video / Видео:** MP4, MOV, AVI, MKV, WebM, FLV, WMV
+   - **Audio / Аудио:** MP3, FLAC, OGG, M4A, WAV, AIFF, WMA
+
+4. **Ethical Use / Этика:** Research and watermarking robustness testing only / Только для научных исследований
 
 ---
 
-## 🛠️ Устранение неполадок
+## RU — Устранение неполадок / EN — Troubleshooting
 
-### Ошибка: "Установите Pillow: pip install Pillow"
+### "command not found: python"
+Use `python3` instead / Используйте `python3` вместо `python`
 
-Убедитесь, что виртуальное окружение активировано:
+### ExifTool not found / ExifTool не найден
 ```bash
-source venv/bin/activate
-pip install -r requirements.txt
+# macOS
+brew install exiftool
+# Linux
+sudo apt-get install libimage-exiftool-perl
 ```
 
-### ExifTool не найден
-
-Установите ExifTool для полного удаления метаданных:
-- macOS: `brew install exiftool`
-- Linux: `sudo apt-get install libimage-exiftool-perl`
-
-### FFmpeg не найден
-
-Установите FFmpeg для обработки видео:
-- macOS: `brew install ffmpeg`
-- Linux: `sudo apt-get install ffmpeg`
+### FFmpeg not found / FFmpeg не найден
+```bash
+# macOS
+brew install ffmpeg
+# Linux
+sudo apt-get install ffmpeg
+```
 
 ---
 
-## 📝 Лицензия
+## RU — Лицензия / EN — License
 
-Для научно-исследовательских и образовательных целей.
-
----
-
-## 🤝 Вклад
-
-Инструмент основан на академических исследованиях в области медиафорензики и robustness testing водяных знаков.
+For scientific research and educational purposes only.
+Только для научно-исследовательских и образовательных целей.

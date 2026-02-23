@@ -1,63 +1,81 @@
-# 🚀 Быстрый старт
+# Quick Start / Быстрый старт
 
-## 1️⃣ Активация виртуального окружения
+---
+
+## 1️⃣ EN — Activate virtual environment / RU — Активация виртуального окружения
 
 ```bash
-# Перейти в папку проекта
+# RU: Перейти в папку проекта / EN: Navigate to project folder
 cd "/Users/kkolesss/Documents/VSCode Projects/clean-metadata"
 
-# Активировать виртуальное окружение
+# RU: Активировать виртуальное окружение / EN: Activate virtual environment
 source venv/bin/activate
 ```
 
-После активации в терминале появится `(venv)` в начале строки.
+RU: После активации в терминале появится `(venv)` в начале строки.
+EN: After activation you will see `(venv)` at the start of the terminal prompt.
 
-## 2️⃣ Проверка установки
+---
+
+## 2️⃣ EN — Verify installation / RU — Проверка установки
 
 ```bash
-# Проверить зависимости
 python clean_metadata.py --check-deps
 ```
 
-**Все Python-пакеты уже установлены!** ✅
-- ✓ Pillow
-- ✓ numpy
-- ✓ scipy
-- ✓ PyWavelets
-- ✓ mutagen
+**RU: Все зависимости установлены** ✅ / **EN: All dependencies installed** ✅
 
-## 3️⃣ Базовое использование
+| Component | Status |
+|-----------|--------|
+| Pillow    | ✅ |
+| numpy     | ✅ |
+| scipy     | ✅ |
+| PyWavelets | ✅ |
+| mutagen   | ✅ |
+| exiftool  | ✅ |
+| ffmpeg    | ✅ |
+
+---
+
+## 3️⃣ EN — Basic usage / RU — Базовое использование
 
 ```bash
-# Обработать одно изображение
+# RU: Обработать одно изображение
+# EN: Process a single image
 python clean_metadata.py examples/your_photo.jpg
 
-# Обработать с подробным выводом
+# RU: Обработать с подробным выводом
+# EN: Process with verbose output
 python clean_metadata.py examples/your_photo.jpg --wm-method ensemble --wm-strength 0.5 -v
 
-# Обработать всю папку
+# RU: Обработать всю папку
+# EN: Process entire folder
 python clean_metadata.py ./examples -o ./cleaned
 ```
 
-Результаты сохраняются в папку `./cleaned/`
+RU: Результаты сохраняются в папку `./cleaned/`
+EN: Results are saved to `./cleaned/`
 
-## 4️⃣ Опциональные внешние инструменты
+---
 
-Для расширенного функционала установите:
+## 4️⃣ EN — External tools / RU — Внешние инструменты
 
-### ExifTool (для полного удаления метаданных)
+RU: Оба инструмента уже установлены. Команды установки приведены для справки.
+EN: Both tools are already installed. Install commands listed for reference.
+
+### ExifTool (RU: полное удаление метаданных / EN: full metadata removal)
 ```bash
 brew install exiftool
 ```
 
-### FFmpeg (для обработки видео)
+### FFmpeg (RU: обработка видео / EN: video processing)
 ```bash
 brew install ffmpeg
 ```
 
-## 5️⃣ Деактивация окружения
+---
 
-Когда закончите работу:
+## 5️⃣ EN — Deactivate environment / RU — Деактивация окружения
 
 ```bash
 deactivate
@@ -65,59 +83,68 @@ deactivate
 
 ---
 
-## 📖 Подробная документация
-
-См. полную документацию в **[README.md](README.md)**
-
----
-
-## ⚡ Примеры команд
+## EN — Quick command reference / RU — Примеры команд
 
 ```bash
-# Простая обработка
+# RU: Простая обработка / EN: Simple processing
 python clean_metadata.py photo.jpg
 
-# С анализом watermark
+# RU: С анализом watermark / EN: With watermark analysis
 python clean_metadata.py photo.jpg --analyze -v
 
-# Только метаданные (без watermark-атаки)
+# RU: Только метаданные (без watermark-атаки) / EN: Metadata only (no watermark attack)
 python clean_metadata.py photo.jpg --no-watermark-attack
 
-# Вся папка с максимальной атакой
+# RU: Вся папка с максимальной атакой / EN: Entire folder with maximum attack
 python clean_metadata.py ./examples --wm-method ensemble --wm-strength 0.7 -r
 
-# Сравнение метаданных до/после
+# RU: Сравнение метаданных до/после / EN: Metadata comparison before/after
 python clean_metadata.py photo.jpg --compare
+
+# RU: Управление качеством JPEG / EN: Control output JPEG quality
+python clean_metadata.py photo.jpg --quality 92
 ```
 
 ---
 
-## 📁 Структура проекта
+## EN — Project Structure / RU — Структура проекта
 
 ```
 clean-metadata/
-├── venv/                    ← Виртуальное окружение (уже создано)
-├── clean_metadata.py        ← Основной скрипт
-├── requirements.txt         ← Зависимости (уже установлены)
-├── examples/               ← Поместите сюда тестовые файлы
-└── cleaned/                ← Здесь будут результаты
+├── venv/                    ← Python virtual environment / Виртуальное окружение
+├── clean_metadata.py        ← Main script / Основной скрипт
+├── requirements.txt         ← Dependencies / Зависимости
+├── requirements-lock.txt    ← Pinned versions / Зафиксированные версии
+├── README.md                ← Full docs (RU + EN) / Полная документация
+├── QUICKSTART.md            ← This file / Этот файл
+├── PROJECT_INFO.md          ← Project status / Статус проекта
+├── COMMANDS.txt             ← Command cheatsheet / Шпаргалка
+├── examples/                ← Place input files here / Входные файлы
+└── cleaned/                 ← Results appear here / Результаты
 ```
 
 ---
 
-## ❓ Проблемы?
+## EN — Troubleshooting / RU — Проблемы?
 
 ### "command not found: python"
-Используйте `python3` вместо `python`
+RU: Используйте `python3` вместо `python`
+EN: Use `python3` instead of `python`
 
-### Виртуальное окружение не активируется
-Убедитесь, что используете полный путь:
+### RU: Виртуальное окружение не активируется / EN: venv not activating
 ```bash
 source "/Users/kkolesss/Documents/VSCode Projects/clean-metadata/venv/bin/activate"
 ```
 
-### Забыли активировать venv?
-Проверьте, есть ли `(venv)` в начале строки терминала. Если нет:
+### RU: Забыли активировать venv? / EN: Forgot to activate venv?
+RU: Проверьте, есть ли `(venv)` в начале строки терминала. Если нет:
+EN: Check for `(venv)` at the start of the terminal prompt. If missing:
 ```bash
 source venv/bin/activate
 ```
+
+---
+
+## EN — Full documentation / RU — Подробная документация
+
+See **[README.md](README.md)** / См. **[README.md](README.md)**
