@@ -348,7 +348,7 @@ class WatermarkAttacker:
     # ──────────────────────────────────────────────────────────
     # 9. Ensemble-атака (все методы последовательно)
     # ──────────────────────────────────────────────────────────
-    def ensemble_attack(self, img: "Image.Image") -> "Image.Image":
+    def ensemble_attack(self, img: "Image.Image", orig_format: str = None) -> "Image.Image":
         """
         Последовательное применение всех атак с пониженным strength.
         Наиболее эффективная стратегия для обхода robustness watermarks.
@@ -358,6 +358,9 @@ class WatermarkAttacker:
         original_strength = self.strength
         # Снижаем силу каждой атаки, т.к. они применяются совместно
         self.strength = original_strength * 0.2
+
+        fmt = orig_format or getattr(img, "format", None) or ""
+        is_png = fmt.upper().strip(".") == "PNG"
 
         arr = img_to_array(img)
         original_arr = arr.copy()
@@ -384,8 +387,9 @@ class WatermarkAttacker:
             arr2 = self.dct_perturbation(arr2)
             img_result = array_to_img(arr2, img.mode)
 
-        # Шаг 6: Двойное JPEG (финальное)
-        img_result = self.double_jpeg(img_result)
+        # Шаг 6: Двойное JPEG (финальное) — пропускаем для PNG (lossless формат)
+        if not is_png:
+            img_result = self.double_jpeg(img_result)
 
         # Метрика качества
         final_arr = img_to_array(img_result)
@@ -399,13 +403,13 @@ class WatermarkAttacker:
     # ──────────────────────────────────────────────────────────
     # Применить выбранную атаку
     # ──────────────────────────────────────────────────────────
-    def apply(self, img: "Image.Image", method: str) -> "Image.Image":
+    def apply(self, img: "Image.Image", method: str, file_ext: str = "") -> "Image.Image":
         """Применяет указанный метод к изображению."""
         if img.mode != "RGB":
             img = img.convert("RGB")
 
         if method == "ensemble":
-            return self.ensemble_attack(img)
+            return self.ensemble_attack(img, orig_format=file_ext)
 
         arr = img_to_array(img)
 
@@ -574,7 +578,7 @@ def process_image(
 
     original_arr = img_to_array(img_copy.convert("RGB"))
 
-    attacked_img = attacker.apply(img_copy, wm_method)
+    attacked_img = attacker.apply(img_copy, wm_method, file_ext=ext)
 
     # Сохраняем результат
     save_path = output_path
@@ -586,7 +590,8 @@ def process_image(
     if fmt == "JPEG":
         save_kw = {"quality": 97, "optimize": True, "subsampling": 0}
     elif fmt == "PNG":
-        save_kw = {"optimize": True}
+        # compress_level=1 — lossless, пиксели не меняются, быстрее сохранение
+        save_kw = {"optimize": False, "compress_level": 1}
 
     attacked_img.save(save_path, format=fmt, **save_kw)
 
