@@ -140,7 +140,7 @@ class WatermarkAttacker:
         Нарушает высокочастотные паттерны watermark без видимой деградации.
         Ref: Stirmark Benchmark (Petitcolas et al., 1998)
         """
-        sigma = self.strength * 8.0  # σ ∈ [0, 8] при strength ∈ [0, 1]
+        sigma = self.strength * 5.0  # σ ∈ [0, 5] при strength ∈ [0, 1]
         noise = np.random.normal(0, sigma, arr.shape)
         self._log(f"Gaussian noise σ={sigma:.2f}")
         return arr + noise
@@ -154,8 +154,8 @@ class WatermarkAttacker:
         DCT-квантизация разрушает тонкие частотные паттерны watermark.
         Ref: Кlassic атака, описана в Barni et al. (2001)
         """
-        q1 = int(85 - self.strength * 20)  # 65–85
-        q2 = int(90 - self.strength * 10)  # 80–90
+        q1 = int(92 - self.strength * 10)  # 82–92
+        q2 = int(95 - self.strength * 5)   # 90–95
 
         buf = BytesIO()
         img.save(buf, format="JPEG", quality=q1, subsampling=0)
@@ -225,7 +225,7 @@ class WatermarkAttacker:
             return arr
 
         result = arr.copy()
-        epsilon = self.strength * 5.0
+        epsilon = self.strength * 3.0
 
         for c in range(arr.shape[2]):
             coeffs = pywt.dwt2(result[:, :, c], 'db4')
@@ -236,7 +236,9 @@ class WatermarkAttacker:
             cV += np.random.normal(0, epsilon, cV.shape)
             cD += np.random.normal(0, epsilon, cD.shape)
 
-            result[:, :, c] = pywt.idwt2((cA, (cH, cV, cD)), 'db4')
+            reconstructed = pywt.idwt2((cA, (cH, cV, cD)), 'db4')
+            h, w = result[:, :, c].shape
+            result[:, :, c] = reconstructed[:h, :w]
 
         self._log(f"Wavelet noise ε={epsilon:.2f}")
         return result
@@ -252,15 +254,15 @@ class WatermarkAttacker:
         result = arr.copy()
 
         # Гамма-коррекция
-        gamma = 1.0 + (random.random() - 0.5) * self.strength * 0.3
+        gamma = 1.0 + (random.random() - 0.5) * self.strength * 0.15
         result = np.power(result / 255.0, gamma) * 255.0
 
         # Яркость
-        brightness = (random.random() - 0.5) * self.strength * 15
+        brightness = (random.random() - 0.5) * self.strength * 8
         result += brightness
 
         # Контраст
-        contrast = 1.0 + (random.random() - 0.5) * self.strength * 0.2
+        contrast = 1.0 + (random.random() - 0.5) * self.strength * 0.1
         mean = np.mean(result)
         result = (result - mean) * contrast + mean
 
@@ -325,7 +327,7 @@ class WatermarkAttacker:
         локальной вариации — нарушает детектор без значимого PSNR-снижения.
         Ref: Zhao et al. "Invisible Image Watermarks Are Provably Removable" (2023)
         """
-        epsilon = self.strength * 4.0
+        epsilon = self.strength * 2.5
 
         # Аппроксимация "градиента" через локальную вариацию (Sobel)
         result = arr.copy()
@@ -352,7 +354,7 @@ class WatermarkAttacker:
         self._log("=== ENSEMBLE ATTACK ===")
         original_strength = self.strength
         # Снижаем силу каждой атаки, т.к. они применяются совместно
-        self.strength = original_strength * 0.4
+        self.strength = original_strength * 0.2
 
         arr = img_to_array(img)
         original_arr = arr.copy()
@@ -537,7 +539,7 @@ def process_image(
     meta_ok = False
 
     if has_tool("exiftool"):
-        ok, _ = run(["exiftool", "-all=", "-overwrite_original",
+        ok, _ = run(["exiftool", "-all=",
                      "-o", str(output_path), str(input_path)])
         if ok:
             print(f"    [exiftool] Все теги удалены")
@@ -583,7 +585,7 @@ def process_image(
 
     save_kw = {}
     if fmt == "JPEG":
-        save_kw = {"quality": 95, "optimize": True, "subsampling": 0}
+        save_kw = {"quality": 97, "optimize": True, "subsampling": 0}
     elif fmt == "PNG":
         save_kw = {"optimize": True}
 
