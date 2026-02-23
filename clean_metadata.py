@@ -161,12 +161,12 @@ class WatermarkAttacker:
         q2 = int(95 - self.strength * 5)   # 90–95
 
         buf = BytesIO()
-        img.save(buf, format="JPEG", quality=q1, subsampling=0)
+        img.save(buf, format="JPEG", quality=q1, subsampling=2)
         buf.seek(0)
         img2 = Image.open(buf).copy()
 
         buf2 = BytesIO()
-        img2.save(buf2, format="JPEG", quality=q2, subsampling=0)
+        img2.save(buf2, format="JPEG", quality=q2, subsampling=2)
         buf2.seek(0)
         result = Image.open(buf2).copy()
 
@@ -528,7 +528,8 @@ def process_image(
     wm_method: str = "ensemble",
     wm_strength: float = 0.5,
     aggressive_meta: bool = False,
-    verbose: bool = False
+    verbose: bool = False,
+    jpeg_quality: int = 90,
 ) -> bool:
     if not HAS_PIL:
         return False
@@ -588,10 +589,9 @@ def process_image(
 
     save_kw = {}
     if fmt == "JPEG":
-        save_kw = {"quality": 97, "optimize": True, "subsampling": 0}
+        save_kw = {"quality": jpeg_quality, "optimize": True, "subsampling": 2}
     elif fmt == "PNG":
-        # compress_level=1 — lossless, пиксели не меняются, быстрее сохранение
-        save_kw = {"optimize": False, "compress_level": 1}
+        save_kw = {"optimize": False, "compress_level": 6}
 
     attacked_img.save(save_path, format=fmt, **save_kw)
 
@@ -1196,6 +1196,9 @@ def main():
                         help="Сила атаки: 0.3=минимальная, 0.5=баланс, 0.8=максимальная")
     parser.add_argument("--no-watermark-attack", action="store_true",
                         help="Только метаданные, без атаки на watermark")
+    parser.add_argument("--quality", type=int, default=90,
+                        metavar="60–97",
+                        help="Качество JPEG на выходе (default=90, меньше=компактнее, больше=лучше качество)")
     parser.add_argument("--check-deps", action="store_true")
     parser.add_argument("--analyze", action="store_true",
                         help="Анализировать файлы на признаки watermark (до и после)")
@@ -1210,6 +1213,10 @@ def main():
 
     if not (0.0 <= args.wm_strength <= 1.0):
         print("[!] --wm-strength должен быть от 0.0 до 1.0")
+        sys.exit(1)
+
+    if not (60 <= args.quality <= 97):
+        print("[!] --quality должен быть от 60 до 97")
         sys.exit(1)
 
     output_dir = Path(args.output)
@@ -1237,6 +1244,7 @@ def main():
     print(f"WM-атака:      {'нет (--no-watermark-attack)' if args.no_watermark_attack else args.wm_method}")
     if not args.no_watermark_attack:
         print(f"WM-strength:   {args.wm_strength}")
+    print(f"JPEG quality:  {args.quality}")
     print(f"Вывод:         {output_dir.resolve()}\n")
 
     analyzer = WatermarkAnalyzer()
@@ -1271,7 +1279,8 @@ def main():
                     wm_method=args.wm_method,
                     wm_strength=args.wm_strength,
                     aggressive_meta=args.aggressive,
-                    verbose=args.verbose
+                    verbose=args.verbose,
+                    jpeg_quality=args.quality,
                 )
         elif ext in VIDEO_EXTS:
             ok = process_video(f, output_path, args.aggressive)
