@@ -97,7 +97,10 @@ def img_to_array(img: "Image.Image") -> np.ndarray:
 
 def array_to_img(arr: np.ndarray, mode="RGB") -> "Image.Image":
     arr = np.clip(arr, 0, 255).astype(np.uint8)
-    return Image.fromarray(arr, mode)
+    img = Image.fromarray(arr)
+    if img.mode != mode:
+        img = img.convert(mode)
+    return img
 
 
 def psnr(original: np.ndarray, modified: np.ndarray) -> float:
@@ -282,7 +285,7 @@ class WatermarkAttacker:
             return arr
 
         h, w = arr.shape[:2]
-        amplitude = self.strength * 1.5  # в пикселях
+        amplitude = self.strength * 0.8  # в пикселях (субпиксельный сдвиг)
 
         # Случайное поле смещений
         dy = ndimage.gaussian_filter(
@@ -366,28 +369,22 @@ class WatermarkAttacker:
         if HAS_WAVELETS:
             arr = self.wavelet_noise(arr)
 
-        # Шаг 3: Геометрические деформации
+        # Шаг 3: Геометрические деформации (субпиксельные)
         if HAS_SCIPY:
             arr = self.geometric_distortion(arr)
 
         # Шаг 4: FGSM-шум
         arr = self.fgsm_noise(arr)
 
-        # Шаг 5: Гауссовский шум
-        arr = self.gaussian_noise(arr)
-
         img_result = array_to_img(arr, img.mode)
 
-        # Шаг 6: Медианный фильтр
-        img_result = self.median_filter(img_result)
-
-        # Шаг 7: DCT-возмущения (если scipy доступен)
+        # Шаг 5: DCT-возмущения (если scipy доступен)
         if HAS_SCIPY:
             arr2 = img_to_array(img_result)
             arr2 = self.dct_perturbation(arr2)
             img_result = array_to_img(arr2, img.mode)
 
-        # Шаг 8: Двойное JPEG (финальное)
+        # Шаг 6: Двойное JPEG (финальное)
         img_result = self.double_jpeg(img_result)
 
         # Метрика качества
@@ -539,6 +536,8 @@ def process_image(
     meta_ok = False
 
     if has_tool("exiftool"):
+        if output_path.exists():
+            output_path.unlink()
         ok, _ = run(["exiftool", "-all=",
                      "-o", str(output_path), str(input_path)])
         if ok:
@@ -672,40 +671,177 @@ def process_audio(input_path: Path, output_path: Path) -> bool:
 #  СРАВНЕНИЕ МЕТАДАННЫХ
 # ══════════════════════════════════════════════════════════════
 
-def compare_metadata(original: Path, cleaned: Path):
-    if not has_tool("exiftool"):
-        return
-    TECHNICAL = {
-        "SourceFile", "ExifToolVersion", "FileName", "Directory",
-        "FileSize", "FileModifyDate", "FileAccessDate", "FileCreateDate",
-        "FilePermissions", "FileType", "FileTypeExtension", "MIMEType",
-        "ImageWidth", "ImageHeight", "ImageSize", "Megapixels",
-        "BitDepth", "ColorType", "Compression", "Filter", "Interlace",
-        "EncodingProcess", "BitsPerSample", "ColorComponents",
-        "YCbCrSubSampling", "Duration", "AvgBitrate",
-    }
-
-    def get_tags(p):
+def get_file_tags(p: Path) -> dict:
+    """Читает теги файла через exiftool или Pillow как fallback."""
+    if has_tool("exiftool"):
         r = subprocess.run(["exiftool", "-j", str(p)],
                            capture_output=True, text=True)
         try:
             return json.loads(r.stdout)[0] if r.stdout else {}
         except Exception:
             return {}
+    # Pillow fallback — только JPEG EXIF
+    try:
+        from PIL import Image as PilImage
+        from PIL.ExifTags import TAGS
+        with PilImage.open(p) as img:
+            exif_data = img.getexif()
+            if not exif_data:
+                return {}
+            result = {}
+            for tag_id, value in exif_data.items():
+                tag_name = TAGS.get(tag_id, str(tag_id))
+                try:
+                    result[tag_name] = str(value)[:200]
+                except Exception:
+                    pass
+            return result
+    except Exception:
+        return {}
 
-    before = get_tags(original)
-    after = get_tags(cleaned)
-    removed = set(before.keys()) - set(after.keys())
-    remaining = {k: v for k, v in after.items() if k not in TECHNICAL}
 
-    print(f"\n  📊 Метаданные:")
-    print(f"     До: {len(before)} тегов  →  После: {len(after)} тегов  "
-          f"(удалено: {len(removed)})")
+def compare_metadata(original: Path, cleaned: Path, before_tags: dict = None):
+    # Теги файловой системы — не хранятся в файле, удалить невозможно
+    FS_TAGS = {
+        "SourceFile", "ExifToolVersion", "FileName", "Directory",
+        "FileSize", "FileModifyDate", "FileAccessDate", "FileCreateDate",
+        "FileInodeChangeDate", "FilePermissions", "FileType",
+        "FileTypeExtension", "MIMEType",
+        "ImageWidth", "ImageHeight", "ImageSize", "Megapixels",
+        "BitDepth", "ColorType", "Compression", "Filter", "Interlace",
+        "EncodingProcess", "BitsPerSample", "ColorComponents",
+        "YCbCrSubSampling", "Duration", "AvgBitrate",
+        "JFIFVersion", "ResolutionUnit", "XResolution", "YResolution",
+    }
 
-    if remaining:
-        print(f"  ⚠️  Осталось: {', '.join(sorted(remaining.keys()))}")
+    # Известные AI-маркеры: тег -> подстроки значений (lowercase)
+    AI_TAG_VALUES = {
+        "Software":           ["midjourney", "dall-e", "dall\u00b7e", "firefly",
+                               "stable diffusion", "imagen", "synthid", "runway",
+                               "adobe firefly", "canva ai", "leonardo", "ideogram",
+                               "flux", "kling", "sora", "nightcafe", "dreamstudio",
+                               "invokeai", "automatic1111", "comfyui", "novelai"],
+        "CreatorTool":        ["midjourney", "dall-e", "firefly", "stable diffusion",
+                               "adobe firefly", "imagen", "runway", "leonardo"],
+        "HistoryAction":      ["generated", "ai generate"],
+        "HistorySoftwareAgent": ["firefly", "midjourney", "dall-e", "stable diffusion"],
+        "Make":               ["google deepmind", "openai"],
+        "Artist":             ["midjourney", "dall-e", "firefly"],
+        "Copyright":          ["midjourney", "openai", "stability ai", "adobe firefly"],
+        "ImageDescription":   ["ai generated", "generated by", "created by ai",
+                               "midjourney", "dall-e", "stable diffusion"],
+        "Description":        ["ai generated", "generated by", "midjourney",
+                               "dall-e", "stable diffusion", "input ingredient"],
+        "Comment":            ["ai generated", "midjourney", "dall-e"],
+        "Keywords":           ["ai generated", "ai art", "midjourney", "dall-e",
+                               "stable diffusion"],
+        # C2PA / Google Gemini / SynthID
+        "ActionsDescription": ["google generative ai", "created by", "generated",
+                               "synthid", "watermark", "firefly", "midjourney",
+                               "dall-e", "stable diffusion", "ai"],
+        "ActionsDigitalSourceType": ["trainedAlgorithmicMedia", "algorithmicMedia",
+                                     "trainedAlgorithmic"],
+        "Claim_Generator_InfoName": ["google", "adobe", "openai", "stability",
+                                     "midjourney", "firefly", "c2pa"],
+        "Claim_Generator_InfoVersion": [],   # само присутствие = C2PA генератор
+        "Format":             ["image/"],    # C2PA ingredient format
+    }
+    # Теги, само присутствие которых указывает на AI/инструмент (значение неважно)
+    AI_TAG_PRESENCE = {
+        "C2PAVersion", "C2PA", "JUMBF",
+        "DigitalSourceType",            # IPTC стандарт: trainedAlgorithmicMedia
+        "AIGeneratedContent",           # Apple Photos
+        "GeneratedBy",
+        "XMP-c2pa:all",
+        # C2PA структурные теги — их наличие = C2PA манифест
+        "ActiveManifestUrl",
+        "ActiveManifestHash",
+        "JUMDLabel",
+        "JUMDType",
+        "ClaimSignatureUrl",
+        "ClaimSignatureHash",
+        "Claim_Generator_InfoName",
+        "ValidationResultsActiveManifestSuccessCode",
+        "ActionsDigitalSourceType",
+    }
+
+    def is_ai_tag(key, value):
+        if key in AI_TAG_PRESENCE:
+            return True
+        if key == "DigitalSourceType" and "algorithmicmedia" in str(value).lower():
+            return True
+        patterns = AI_TAG_VALUES.get(key, [])
+        val_lower = str(value).lower()
+        return any(p in val_lower for p in patterns)
+
+    def fmt_value(v):
+        s = str(v)
+        return s if len(s) <= 80 else s[:77] + "..."
+
+    before = before_tags if before_tags is not None else get_file_tags(original)
+    after  = get_file_tags(cleaned)
+
+    before_meta = {k: v for k, v in before.items() if k not in FS_TAGS}
+    after_meta  = {k: v for k, v in after.items()  if k not in FS_TAGS}
+    after_fs    = {k: v for k, v in after.items()  if k in FS_TAGS}
+
+    removed_keys   = set(before_meta.keys()) - set(after_meta.keys())
+    remaining_meta = {k: v for k, v in after_meta.items()}
+
+    # AI-маркеры ДО очистки
+    ai_found = {k: v for k, v in before_meta.items() if is_ai_tag(k, v)}
+
+    print(f"\n  {'─'*52}")
+    print(f"  Метаданные: до {len(before_meta)} тегов  →  после {len(after_meta)} тегов  "
+          f"(удалено {len(removed_keys)})")
+    print(f"  {'─'*52}")
+
+    # ── AI-маркеры ──
+    if ai_found:
+        print(f"\n  [!] AI-маркеры обнаружены ДО очистки ({len(ai_found)}):")
+        for k, v in sorted(ai_found.items()):
+            removed_mark = " -> удалён" if k in removed_keys else " -> ОСТАЛСЯ!"
+            print(f"       {k:<30} = {fmt_value(v)}{removed_mark}")
     else:
-        print(f"  ✓  Метаданные полностью удалены")
+        print(f"\n  Явных AI-маркеров в метаданных не найдено")
+
+    # ── Все удалённые теги ──
+    if removed_keys:
+        print(f"\n  Удалено ({len(removed_keys)} тегов):")
+        for k in sorted(removed_keys):
+            ai_mark = "  [AI]" if k in ai_found else ""
+            print(f"    - {k:<30} = {fmt_value(before_meta[k])}{ai_mark}")
+    else:
+        print(f"\n  Нет удалённых тегов")
+
+    # ── Оставшиеся EXIF-теги (проблема) ──
+    if remaining_meta:
+        print(f"\n  Осталось EXIF-тегов ({len(remaining_meta)}) — требует внимания:")
+        for k, v in sorted(remaining_meta.items()):
+            ai_mark = "  [AI]" if is_ai_tag(k, v) else ""
+            print(f"    ! {k:<30} = {fmt_value(v)}{ai_mark}")
+    else:
+        print(f"\n  Все EXIF/XMP/IPTC теги удалены")
+
+    # ── Системные теги ФС (норма) ──
+    fs_shown = {k: v for k, v in after_fs.items()
+                if k not in {"SourceFile", "ExifToolVersion", "FileName",
+                             "Directory", "FileType", "FileTypeExtension", "MIMEType"}}
+    if fs_shown:
+        print(f"\n  Системные теги ФС (не в файле, норма):")
+        for k, v in sorted(fs_shown.items()):
+            print(f"       {k:<30} = {fmt_value(v)}")
+
+    # ── Итог ──
+    ai_remaining = {k: v for k, v in remaining_meta.items() if is_ai_tag(k, v)}
+    print(f"\n  {'─'*52}")
+    if ai_remaining:
+        print(f"  ВНИМАНИЕ: осталось AI-тегов: {len(ai_remaining)}")
+    elif ai_found:
+        print(f"  Все AI-маркеры успешно удалены")
+    else:
+        print(f"  {'OK' if not remaining_meta else 'Частично'}: "
+              f"{'метаданные чисты' if not remaining_meta else str(len(remaining_meta)) + ' тегов осталось'}")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1110,6 +1246,9 @@ def main():
             print(f"  [Анализ ДО обработки]")
             analyzer.analyze(f)
 
+        # Читаем теги ДО обработки (пока оригинал не тронут)
+        before_tags = get_file_tags(f) if args.compare else None
+
         ok = False
         if ext in IMAGE_EXTS:
             if args.no_watermark_attack:
@@ -1142,7 +1281,7 @@ def main():
                 randomize_timestamps(output_path)
                 print("    [ts] Timestamps рандомизированы")
             if args.compare:
-                compare_metadata(f, output_path)
+                compare_metadata(f, output_path, before_tags=before_tags)
             size_b = f.stat().st_size
             size_a = output_path.stat().st_size
             print(f"  ✓ {size_b/1024:.1f} KB → {size_a/1024:.1f} KB")
